@@ -9,20 +9,20 @@ from langchain_groq import ChatGroq
 from docx import Document
 import os
 
-# Function to clean and process the OCR text
+
 def clean_text(text):
-    text = re.sub(r"\n", " ", text)  # Replace newline with space
-    text = re.sub(r"[|\[\]]", "", text)  # Remove stray characters like |, [, ]
-    text = re.sub(r"\s+", " ", text).strip()  # Normalize whitespace
+    text = re.sub(r"\n", " ", text)  
+    text = re.sub(r"[|\[\]]", "", text)  
+    text = re.sub(r"\s+", " ", text).strip()  
     return text
 
-# Function to extract text from the image using Tesseract OCR
+
 def extract_text(image):
-    custom_config = r'--oem 3 --psm 6 -l hin'  # Hindi language OCR configuration
+    custom_config = r'--oem 3 --psm 6 -l hin' =
     text = pytesseract.image_to_string(image, config=custom_config)
     return clean_text(text)
 
-# Function to query the LLM with cleaned text
+
 def query_llm(cleaned_text): 
     llm = ChatGroq(
         temperature=0,
@@ -56,17 +56,17 @@ def query_llm(cleaned_text):
     response = llm.invoke(prompt)
     return response.content
 
-# Function to chunk text and send to LLM
+
 def chunk_text(text, chunk_size=6000):
     chunks = [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
     return chunks
 
-# Function to extract pages from PDF, apply inversion, OCR, and query the LLM
+
 def extract_pages_and_invert(pdf_path, start_page, end_page):
     pages = convert_from_path(pdf_path, dpi=300)
     combined_text = ""
     
-    for page_num in range(start_page - 1, end_page):  # 0-indexed
+    for page_num in range(start_page - 1, end_page):  
         img = pages[page_num]
         
         img = np.array(img)
@@ -78,7 +78,7 @@ def extract_pages_and_invert(pdf_path, start_page, end_page):
     
     cleaned_text = clean_text(combined_text)
     
-    # Chunk the cleaned text if it's too large for the model
+    
     text_chunks = chunk_text(cleaned_text)
     
     data = {}
@@ -89,7 +89,7 @@ def extract_pages_and_invert(pdf_path, start_page, end_page):
     
     extracted_json = {}
 
-    # Regex pattern to extract the JSON block
+   
     pattern = r'(\{.*\})'
 
     for chunk_key, chunk_data in data.items():
@@ -103,7 +103,7 @@ def extract_pages_and_invert(pdf_path, start_page, end_page):
 
     return extracted_json
 
-# Streamlit UI setup
+
 st.title("OCR and Data Extraction Application")
 uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
 
@@ -117,24 +117,24 @@ if uploaded_file is not None:
         with open(pdf_path, "wb") as f:
             f.write(uploaded_file.read())
 
-        # Extract and process the PDF
+    
         data = extract_pages_and_invert(pdf_path, start_page, end_page)
 
-        # Prepare the DOCX file
+       
         docx_file_path = os.path.join(os.environ["USERPROFILE"], "Desktop", "voter_report.docx")
         document = Document()
         
-        # Add Header
+       =
         header = "विधान सभा निर्वाचन क्षेत्र, बिहार की निर्वाचक नामावली : 7-अस्थावॉँ भाग संख्या : : प्रभाग की संख्या व नाम : -जक्की"
         doc_paragraph = document.add_paragraph()
         doc_paragraph.add_run(header).bold = True
         doc_paragraph.style = 'Title'
 
-        # Add a Table
+        =
         table = document.add_table(rows=1, cols=5)
         table.style = 'Table Grid'
         
-        # Define header row for the table
+        
         hdr_cells = table.rows[0].cells
         hdr_cells[0].text = "निर्वाचक का नाम"
         hdr_cells[1].text = "पति का नाम / पिता का नाम"
@@ -142,7 +142,7 @@ if uploaded_file is not None:
         hdr_cells[3].text = "उम्र"
         hdr_cells[4].text = "लिंग"
 
-        # Loop through the JSON table entries to populate table rows
+       
         for chunk_key, chunk_value in data.items():
             if chunk_value:
                 for entry in chunk_value.get('Tables', []):
@@ -153,10 +153,10 @@ if uploaded_file is not None:
                     row_cells[3].text = entry.get("उम्र", "")
                     row_cells[4].text = entry.get("लिंग", "")
 
-        # Add Notes Section
+       
         
 
-        # Save the DOCX file
+        
         document.save(docx_file_path)
 
         st.success(f"DOCX file has been created successfully at: {docx_file_path}")
